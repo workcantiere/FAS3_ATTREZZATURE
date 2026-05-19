@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FAS3 Attrezzature</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card">
+    <h1 id="title">Attrezzature</h1>
+    <p class="muted" id="subtitle"></p>
+
+    <section>
+      <h2>Attrezzi presenti</h2>
+      <div id="list" class="list"></div>
+    </section>
+
+    <section>
+      <h2>Aggiungi attrezzi</h2>
+      <p class="muted">Scrivi solo le ultime 4 cifre del codice etichetta.</p>
+      <div id="addFields"></div>
+    </section>
+
+    <section>
+      <h2>Rimuovi dalla lista</h2>
+      <p class="muted">Gli attrezzi rimossi finiscono in “DA_VERIFICARE”, così l’ufficio riceve l’alert.</p>
+      <div id="removeFields"></div>
+    </section>
+
+    <section>
+      <label>Nome operatore</label>
+      <input id="operatore" placeholder="Es. Mario">
+      <label>Note</label>
+      <textarea id="note" placeholder="Es. spostato su altro cantiere, rotto, preso dal socio..."></textarea>
+    </section>
+
+    <button id="saveBtn">SALVA</button>
+    <div id="message"></div>
+  </main>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
