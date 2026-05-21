@@ -52,9 +52,9 @@ function render(data) {
   currentTools.forEach(t => {
     const label = document.createElement('label');
     label.className = 'checkRow';
-    const codice = t.codice || t.CODICE || t.id || '';
-    const tipo = t.tipo || t.TIPO_ATTREZZO || t.descrizione || '';
-    label.innerHTML = `<input type="checkbox" value="${codice}"> <span><b>${codice}</b> - ${tipo}</span>`;
+  const codice = t.codice || t.CODICE || t.id || '';
+  const tipo = t.tipo || t.TIPO_ATTREZZO || t.descrizione || '';
+  label.innerHTML = `<input type="checkbox" value="${codice}"> <span><b>${codice}</b> - ${tipo}</span>`;
     $('removeFields').appendChild(label);
   });
 }
