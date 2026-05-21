@@ -45,14 +45,16 @@ function render(data) {
   currentTools.forEach(t => {
     const div = document.createElement('div');
     div.className = 'toolRow';
-    div.innerHTML = `<strong>${t.codice}</strong><span>${t.tipo || ''}</span>`;
+    div.innerHTML = `<strong>${t.codice || t.CODICE || t.id || ''}</strong><span>${t.tipo || t.TIPO_ATTREZZO || t.descrizione || ''}</span>`;
     $('list').appendChild(div);
   });
   $('removeFields').innerHTML = currentTools.length ? '' : '<p class="muted">Niente da rimuovere.</p>';
   currentTools.forEach(t => {
     const label = document.createElement('label');
     label.className = 'checkRow';
-    label.innerHTML = `<input type="checkbox" value="${t.codice}"> <span><b>${t.codice}</b> - ${t.tipo || ''}</span>`;
+    const codice = t.codice || t.CODICE || t.id || '';
+    const tipo = t.tipo || t.TIPO_ATTREZZO || t.descrizione || '';
+    label.innerHTML = `<input type="checkbox" value="${codice}"> <span><b>${codice}</b> - ${tipo}</span>`;
     $('removeFields').appendChild(label);
   });
 }
