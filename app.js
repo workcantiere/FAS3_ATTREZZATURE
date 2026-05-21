@@ -52,3 +52,6 @@ function render(data) {
     $('removeFields').appendChild(label);
   });
 }
+$('saveBtn').addEventListener('click', save);
+addInput();
+load();
