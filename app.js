@@ -1,3 +1,45 @@
+const params = new URLSearchParams(location.search);
+const posizione = params.get('posizione') || params.get('pos') || 'MAGAZZINO';
+const $ = (id) => document.getElementById(id);
+let currentTools = [];
+
+function apiGet(action, extra = {}) {
+  const url = new URL(window.FAS3_API_URL);
+  url.searchParams.set('action', action);
+  Object.entries(extra).forEach(([k, v]) => url.searchParams.set(k, v));
+  return fetch(url).then(r => r.json());
+}
+
+function apiPost(payload) {
+  return fetch(window.FAS3_API_URL, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+  }).then(r => r.json());
+}
+
+function addInput(value = '') {
+  const wrap = document.createElement('div');
+  wrap.className = 'inputRow';
+
+  const input = document.createElement('input');
+  input.maxLength = 4;
+  input.inputMode = 'numeric';
+  input.placeholder = 'Ultime 4 cifre';
+  input.value = value;
+  input.className = 'codeInput';
+
+  input.addEventListener('input', () => {
+    input.value = input.value.replace(/\D/g, '').slice(0, 4);
+    const fields = [...document.querySelectorAll('.codeInput')];
+    const isLast = fields[fields.length - 1] === input;
+    if (input.value.length > 0 && isLast) addInput();
+  });
+
+  wrap.appendChild(input);
+  $('addFields').appendChild(wrap);
+}
+
 function valorePulito(v) {
   if (v === undefined || v === null) return '';
   v = String(v).trim();
@@ -15,16 +57,8 @@ function render(data) {
   $('list').innerHTML = currentTools.length ? '' : '<p class="muted">Nessun attrezzo presente.</p>';
 
   currentTools.forEach(t => {
-    let codice = '';
-    let tipo = '';
-
-    if (Array.isArray(t)) {
-      codice = valorePulito(t[0]);
-      tipo = valorePulito(t[1] || t[2]);
-    } else {
-      codice = valorePulito(t.codice || t.CODICE || t.Codice || t.id || t.ID);
-      tipo = valorePulito(t.tipo || t.TIPO_ATTREZZO || t.Tipo || t.descrizione || t.DESCRIZIONE);
-    }
+    const codice = valorePulito(t.codice || t.CODICE || t.Codice || t.id || t.ID);
+    const tipo = valorePulito(t.tipo || t.TIPO_ATTREZZO || t.Tipo || t.descrizione || t.DESCRIZIONE);
 
     const div = document.createElement('div');
     div.className = 'toolRow';
@@ -35,16 +69,8 @@ function render(data) {
   $('removeFields').innerHTML = currentTools.length ? '' : '<p class="muted">Niente da rimuovere.</p>';
 
   currentTools.forEach(t => {
-    let codice = '';
-    let tipo = '';
-
-    if (Array.isArray(t)) {
-      codice = valorePulito(t[0]);
-      tipo = valorePulito(t[1] || t[2]);
-    } else {
-      codice = valorePulito(t.codice || t.CODICE || t.Codice || t.id || t.ID);
-      tipo = valorePulito(t.tipo || t.TIPO_ATTREZZO || t.Tipo || t.descrizione || t.DESCRIZIONE);
-    }
+    const codice = valorePulito(t.codice || t.CODICE || t.Codice || t.id || t.ID);
+    const tipo = valorePulito(t.tipo || t.TIPO_ATTREZZO || t.Tipo || t.descrizione || t.DESCRIZIONE);
 
     const label = document.createElement('label');
     label.className = 'checkRow';
@@ -52,6 +78,60 @@ function render(data) {
     $('removeFields').appendChild(label);
   });
 }
+
+async function load() {
+  $('message').textContent = 'Caricamento...';
+  try {
+    const data = await apiGet('getLocationData', { posizione });
+    if (!data.ok) throw new Error(data.error || 'Errore caricamento');
+    render(data);
+    $('message').textContent = '';
+  } catch (e) {
+    $('message').textContent = 'Errore: ' + e.message;
+  }
+}
+
+async function save() {
+  const aggiunti = [...document.querySelectorAll('.codeInput')]
+    .map(i => i.value.trim())
+    .filter(Boolean);
+
+  const rimossi = [...document.querySelectorAll('#removeFields input:checked')]
+    .map(i => i.value);
+
+  const payload = {
+    action: 'saveEmployeeUpdate',
+    posizione,
+    operatore: $('operatore').value.trim(),
+    note: $('note').value.trim(),
+    aggiunti,
+    rimossi
+  };
+
+  $('saveBtn').disabled = true;
+  $('message').textContent = 'Salvataggio...';
+
+  try {
+    const res = await apiPost(payload);
+
+    if (res.errors && res.errors.length) {
+      $('message').innerHTML = 'Attenzione:<br>' + res.errors.map(e => '• ' + e).join('<br>');
+    } else {
+      $('message').textContent = 'Salvato correttamente.';
+    }
+
+    if (res.data) render(res.data);
+
+    $('addFields').innerHTML = '';
+    addInput();
+
+  } catch (e) {
+    $('message').textContent = 'Errore: ' + e.message;
+  } finally {
+    $('saveBtn').disabled = false;
+  }
+}
+
 $('saveBtn').addEventListener('click', save);
 addInput();
 load();
