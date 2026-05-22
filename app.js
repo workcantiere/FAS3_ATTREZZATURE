@@ -1,7 +1,9 @@
 const params = new URLSearchParams(location.search);
 const posizione = params.get('posizione') || params.get('pos') || 'MAGAZZINO';
 const $ = (id) => document.getElementById(id);
+
 let currentTools = [];
+let removeMode = false;
 
 function apiGet(action, extra = {}) {
   const url = new URL(window.FAS3_API_URL);
@@ -48,6 +50,14 @@ function valorePulito(v) {
   return v;
 }
 
+function getCodice(t) {
+  return valorePulito(t.codice || t.CODICE || t.Codice || t.id || t.ID);
+}
+
+function getTipo(t) {
+  return valorePulito(t.tipo || t.TIPO_ATTREZZO || t.Tipo || t.descrizione || t.DESCRIZIONE);
+}
+
 function render(data) {
   currentTools = data.attrezzi || [];
 
@@ -57,35 +67,44 @@ function render(data) {
   $('list').innerHTML = currentTools.length ? '' : '<p class="muted">Nessun attrezzo presente.</p>';
 
   currentTools.forEach(t => {
-    const codice = valorePulito(t.codice || t.CODICE || t.Codice || t.id || t.ID);
-    const tipo = valorePulito(t.tipo || t.TIPO_ATTREZZO || t.Tipo || t.descrizione || t.DESCRIZIONE);
+    const codice = getCodice(t);
+    const tipo = getTipo(t);
 
     const div = document.createElement('div');
     div.className = 'toolRow';
-    div.innerHTML = `<strong>${codice}</strong><span>${tipo}</span>`;
+
+    if (removeMode) {
+      div.innerHTML = `
+        <label class="checkRow">
+          <input type="checkbox" class="removeCheck" value="${codice}">
+          <span><b>${codice}</b> - ${tipo}</span>
+        </label>
+      `;
+    } else {
+      div.innerHTML = `<strong>${codice}</strong><span>${tipo}</span>`;
+    }
+
     $('list').appendChild(div);
   });
 
-  $('removeFields').innerHTML = currentTools.length ? '' : '<p class="muted">Niente da rimuovere.</p>';
+  const help = $('removeHelp');
+  const btn = $('toggleRemoveBtn');
 
-  currentTools.forEach(t => {
-    const codice = valorePulito(t.codice || t.CODICE || t.Codice || t.id || t.ID);
-    const tipo = valorePulito(t.tipo || t.TIPO_ATTREZZO || t.Tipo || t.descrizione || t.DESCRIZIONE);
-
-    const label = document.createElement('label');
-    label.className = 'checkRow';
-    label.innerHTML = `<input type="checkbox" value="${codice}"> <span><b>${codice}</b> - ${tipo}</span>`;
-    $('removeFields').appendChild(label);
-  });
+  if (help) help.style.display = removeMode ? 'block' : 'none';
+  if (btn) btn.textContent = removeMode ? 'ANNULLA SELEZIONE RIMOZIONE' : 'SELEZIONA ATTREZZI DA RIMUOVERE';
 }
 
 async function load() {
   $('message').textContent = 'Caricamento...';
+
   try {
     const data = await apiGet('getLocationData', { posizione });
+
     if (!data.ok) throw new Error(data.error || 'Errore caricamento');
+
     render(data);
     $('message').textContent = '';
+
   } catch (e) {
     $('message').textContent = 'Errore: ' + e.message;
   }
@@ -96,8 +115,9 @@ async function save() {
     .map(i => i.value.trim())
     .filter(Boolean);
 
-  const rimossi = [...document.querySelectorAll('#removeFields input:checked')]
-    .map(i => i.value);
+  const rimossi = [...document.querySelectorAll('.removeCheck:checked')]
+    .map(i => i.value)
+    .filter(Boolean);
 
   const payload = {
     action: 'saveEmployeeUpdate',
@@ -120,7 +140,13 @@ async function save() {
       $('message').textContent = 'Salvato correttamente.';
     }
 
-    if (res.data) render(res.data);
+    removeMode = false;
+
+    if (res.data) {
+      render(res.data);
+    } else {
+      await load();
+    }
 
     $('addFields').innerHTML = '';
     addInput();
@@ -133,5 +159,11 @@ async function save() {
 }
 
 $('saveBtn').addEventListener('click', save);
+
+$('toggleRemoveBtn').addEventListener('click', () => {
+  removeMode = !removeMode;
+  render({ posizione, attrezzi: currentTools });
+});
+
 addInput();
 load();
