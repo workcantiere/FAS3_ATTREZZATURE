@@ -160,10 +160,14 @@ async function save() {
 
 $('saveBtn').addEventListener('click', save);
 
-$('toggleRemoveBtn').addEventListener('click', () => {
-  removeMode = !removeMode;
-  render({ posizione, attrezzi: currentTools });
-});
+const toggleBtn = $('toggleRemoveBtn');
+
+if (toggleBtn) {
+  toggleBtn.addEventListener('click', () => {
+    removeMode = !removeMode;
+    render({ posizione, attrezzi: currentTools });
+  });
+}
 
 addInput();
 load();
