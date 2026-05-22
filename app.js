@@ -21,6 +21,9 @@ function apiPost(payload) {
 }
 
 function addInput(value = '') {
+  const addFields = $('addFields');
+  if (!addFields) return;
+
   const wrap = document.createElement('div');
   wrap.className = 'inputRow';
 
@@ -39,7 +42,7 @@ function addInput(value = '') {
   });
 
   wrap.appendChild(input);
-  $('addFields').appendChild(wrap);
+  addFields.appendChild(wrap);
 }
 
 function valorePulito(v) {
@@ -61,10 +64,13 @@ function getTipo(t) {
 function render(data) {
   currentTools = data.attrezzi || [];
 
-  $('title').textContent = data.posizione || posizione;
-  $('subtitle').textContent = 'Link operativo per aggiornare la lista attrezzatura';
+  if ($('title')) $('title').textContent = data.posizione || posizione;
+  if ($('subtitle')) $('subtitle').textContent = 'Link operativo per aggiornare la lista attrezzatura';
 
-  $('list').innerHTML = currentTools.length ? '' : '<p class="muted">Nessun attrezzo presente.</p>';
+  const list = $('list');
+  if (!list) return;
+
+  list.innerHTML = currentTools.length ? '' : '<p class="muted">Nessun attrezzo presente.</p>';
 
   currentTools.forEach(t => {
     const codice = getCodice(t);
@@ -84,29 +90,30 @@ function render(data) {
       div.innerHTML = `<strong>${codice}</strong><span>${tipo}</span>`;
     }
 
-    $('list').appendChild(div);
+    list.appendChild(div);
   });
 
-  const help = $('removeHelp');
-  const btn = $('toggleRemoveBtn');
+  const removeHelp = $('removeHelp');
+  if (removeHelp) removeHelp.style.display = removeMode ? 'block' : 'none';
 
-  if (help) help.style.display = removeMode ? 'block' : 'none';
-  if (btn) btn.textContent = removeMode ? 'ANNULLA SELEZIONE RIMOZIONE' : 'SELEZIONA ATTREZZI DA RIMUOVERE';
+  const toggleBtn = $('toggleRemoveBtn');
+  if (toggleBtn) {
+    toggleBtn.textContent = removeMode
+      ? 'ANNULLA SELEZIONE RIMOZIONE'
+      : 'SELEZIONA ATTREZZI DA RIMUOVERE';
+  }
 }
 
 async function load() {
-  $('message').textContent = 'Caricamento...';
+  if ($('message')) $('message').textContent = 'Caricamento...';
 
   try {
     const data = await apiGet('getLocationData', { posizione });
-
     if (!data.ok) throw new Error(data.error || 'Errore caricamento');
-
     render(data);
-    $('message').textContent = '';
-
+    if ($('message')) $('message').textContent = '';
   } catch (e) {
-    $('message').textContent = 'Errore: ' + e.message;
+    if ($('message')) $('message').textContent = 'Errore: ' + e.message;
   }
 }
 
@@ -122,22 +129,22 @@ async function save() {
   const payload = {
     action: 'saveEmployeeUpdate',
     posizione,
-    operatore: $('operatore').value.trim(),
-    note: $('note').value.trim(),
+    operatore: $('operatore') ? $('operatore').value.trim() : '',
+    note: $('note') ? $('note').value.trim() : '',
     aggiunti,
     rimossi
   };
 
-  $('saveBtn').disabled = true;
-  $('message').textContent = 'Salvataggio...';
+  if ($('saveBtn')) $('saveBtn').disabled = true;
+  if ($('message')) $('message').textContent = 'Salvataggio...';
 
   try {
     const res = await apiPost(payload);
 
     if (res.errors && res.errors.length) {
-      $('message').innerHTML = 'Attenzione:<br>' + res.errors.map(e => '• ' + e).join('<br>');
+      if ($('message')) $('message').innerHTML = 'Attenzione:<br>' + res.errors.map(e => '• ' + e).join('<br>');
     } else {
-      $('message').textContent = 'Salvato correttamente.';
+      if ($('message')) $('message').textContent = 'Salvato correttamente.';
     }
 
     removeMode = false;
@@ -148,26 +155,28 @@ async function save() {
       await load();
     }
 
-    $('addFields').innerHTML = '';
+    if ($('addFields')) $('addFields').innerHTML = '';
     addInput();
 
   } catch (e) {
-    $('message').textContent = 'Errore: ' + e.message;
+    if ($('message')) $('message').textContent = 'Errore: ' + e.message;
   } finally {
-    $('saveBtn').disabled = false;
+    if ($('saveBtn')) $('saveBtn').disabled = false;
   }
 }
 
-$('saveBtn').addEventListener('click', save);
+document.addEventListener('DOMContentLoaded', () => {
+  const saveBtn = $('saveBtn');
+  if (saveBtn) saveBtn.addEventListener('click', save);
 
-const toggleBtn = $('toggleRemoveBtn');
+  const toggleBtn = $('toggleRemoveBtn');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      removeMode = !removeMode;
+      render({ posizione, attrezzi: currentTools });
+    });
+  }
 
-if (toggleBtn) {
-  toggleBtn.addEventListener('click', () => {
-    removeMode = !removeMode;
-    render({ posizione, attrezzi: currentTools });
-  });
-}
-
-addInput();
-load();
+  addInput();
+  load();
+});
